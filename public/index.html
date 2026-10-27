@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OpenAI Speech-to-Text | Vercel</title>
+  <title>OpenAI Speech-to-Task & Speech-to-Text | Vercel</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
@@ -28,16 +28,16 @@
     <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-          <i data-lucide="mic" class="w-5 h-5"></i>
+          <i data-lucide="sparkles" class="w-5 h-5"></i>
         </div>
         <div>
-          <h1 class="font-bold text-lg text-slate-900 leading-tight">Speech-to-Text</h1>
-          <p class="text-xs text-slate-500">Powered by OpenAI & Vercel Serverless</p>
+          <h1 class="font-bold text-lg text-slate-900 leading-tight">Speech-to-Task AI</h1>
+          <p class="text-xs text-slate-500">OpenAI Whisper + GPT-5 Mini on Vercel</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
         <span id="serverKeyBadge" class="hidden text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-          ✓ Server API Key Active
+          ✓ Server Key Active
         </span>
         <a href="https://github.com/digitalself00/speechtotext" target="_blank" class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-100 transition flex items-center gap-1.5">
           <i data-lucide="github" class="w-3.5 h-3.5"></i> GitHub
@@ -51,20 +51,30 @@
     
     <!-- Hero / Title -->
     <div class="text-center mb-8">
-      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold mb-3">
-        <span class="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
-        Fast & Accurate Audio Transcription
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-semibold mb-3">
+        <span class="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></span>
+        AI Speech-to-Task Extraction API
       </div>
       <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-        Convert Audio to Text in Seconds
+        Turn Voice Speech into Actionable Tasks
       </h2>
       <p class="text-slate-600 mt-2 text-sm sm:text-base max-w-xl mx-auto">
-        Upload an audio recording or record live from your microphone. Powered by OpenAI's Whisper and speech models.
+        Speak your task or upload audio. The API transcribes speech with Whisper and extracts task title, description, start time, end time, and priority using OpenAI GPT-5 Mini.
       </p>
     </div>
 
     <!-- Main Card -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 space-y-6">
+
+      <!-- Mode Selector -->
+      <div class="p-1.5 bg-slate-100 rounded-xl flex gap-1 text-xs font-semibold">
+        <button id="modeTaskBtn" onclick="setMode('task')" class="flex-1 py-2 px-3 rounded-lg bg-white text-indigo-700 shadow-sm transition flex items-center justify-center gap-1.5">
+          <i data-lucide="list-todo" class="w-4 h-4"></i> Speech-to-Task (GPT-5 Mini)
+        </button>
+        <button id="modeSttBtn" onclick="setMode('transcribe')" class="flex-1 py-2 px-3 rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5">
+          <i data-lucide="file-text" class="w-4 h-4"></i> Transcription Only
+        </button>
+      </div>
 
       <!-- Input Method Tabs -->
       <div class="flex border-b border-slate-200 gap-4 text-sm font-semibold">
@@ -122,19 +132,19 @@
         <audio id="audioPlayer" controls class="w-full h-10 outline-none rounded-lg"></audio>
       </div>
 
-      <!-- Model and Configuration Grid -->
+      <!-- Settings Grid -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-        <!-- Model Selector -->
+        <!-- Model Selection -->
         <div>
           <label for="modelSelect" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-            Transcription Model
+            AI Task Model
           </label>
           <select id="modelSelect" class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
-            <option value="whisper-1" selected>whisper-1 (Recommended)</option>
-            <option value="gpt-4o-mini-transcribe">gpt-4o-mini-transcribe</option>
-            <option value="gpt-4o-transcribe">gpt-4o-transcribe</option>
+            <option value="gpt-5-mini" selected>gpt-5-mini (Auto-fallback to 4o-mini)</option>
+            <option value="gpt-4o-mini">gpt-4o-mini</option>
+            <option value="gpt-4o">gpt-4o</option>
           </select>
-          <p class="text-[11px] text-slate-400 mt-1">whisper-1 is OpenAI's standard speech-to-text model.</p>
+          <p class="text-[11px] text-slate-400 mt-1">Extracts structured task JSON from speech.</p>
         </div>
 
         <!-- Optional OpenAI API Key -->
@@ -151,7 +161,7 @@
               <i data-lucide="eye" id="eyeIcon" class="w-4 h-4"></i>
             </button>
           </div>
-          <p class="text-[11px] text-slate-400 mt-1">Stored securely in your browser's session only.</p>
+          <p class="text-[11px] text-slate-400 mt-1">Used for transcription and task extraction.</p>
         </div>
       </div>
 
@@ -159,70 +169,120 @@
       <div id="errorBanner" class="hidden p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm flex items-start gap-3">
         <i data-lucide="alert-circle" class="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5"></i>
         <div class="flex-grow">
-          <p class="font-semibold text-rose-900">Transcription Failed</p>
+          <p class="font-semibold text-rose-900">Request Failed</p>
           <p id="errorMessage" class="text-xs text-rose-700 mt-0.5 break-words"></p>
         </div>
       </div>
 
       <!-- Action Button -->
-      <button id="transcribeBtn" onclick="startTranscription()" disabled class="w-full py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold text-sm shadow-md shadow-blue-500/20 transition flex items-center justify-center gap-2">
+      <button id="processBtn" onclick="runProcess()" disabled class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-slate-200 disabled:to-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold text-sm shadow-md shadow-blue-500/20 transition flex items-center justify-center gap-2">
         <i data-lucide="sparkles" class="w-4 h-4"></i>
-        <span>🚀 Transcribe Audio</span>
+        <span id="processBtnText">🚀 Extract Task (GPT-5 Mini)</span>
       </button>
 
       <!-- Loading State -->
       <div id="loadingIndicator" class="hidden py-6 text-center space-y-3">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
-        <p class="text-sm font-semibold text-slate-700">Transcribing audio with OpenAI...</p>
-        <p class="text-xs text-slate-400">This usually takes between 3 to 15 seconds depending on file length.</p>
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent"></div>
+        <p id="loadingStatusText" class="text-sm font-semibold text-slate-700">Transcribing audio and extracting task with GPT-5 Mini...</p>
+        <p class="text-xs text-slate-400">Transcribing with Whisper & reasoning with OpenAI...</p>
       </div>
 
-      <!-- Output / Result Card -->
-      <div id="resultContainer" class="hidden pt-4 border-t border-slate-200 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2">
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              ✓ Completed
+      <!-- Task Output Card -->
+      <div id="taskResultContainer" class="hidden pt-4 border-t border-slate-200 space-y-4">
+        
+        <!-- Header & Priority Badge -->
+        <div class="p-5 rounded-2xl bg-gradient-to-br from-slate-50 to-indigo-50/30 border border-slate-200 space-y-4">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <span class="text-xs uppercase tracking-wider font-bold text-indigo-600">Extracted Task</span>
+              <h3 id="taskTitleDisplay" class="text-xl font-extrabold text-slate-900 mt-0.5">Team Sync Presentation</h3>
+            </div>
+            <span id="taskPriorityBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+              Medium Priority
             </span>
-            <span id="statWords" class="text-xs text-slate-500 font-medium">0 words</span>
-            <span class="text-slate-300">•</span>
-            <span id="statChars" class="text-xs text-slate-500 font-medium">0 characters</span>
           </div>
 
-          <div class="flex items-center gap-2">
-            <button onclick="copyTranscription()" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition flex items-center gap-1.5">
-              <i data-lucide="copy" class="w-3.5 h-3.5"></i> <span id="copyBtnText">Copy</span>
-            </button>
-            <button onclick="downloadTranscription()" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition flex items-center gap-1.5">
-              <i data-lucide="download" class="w-3.5 h-3.5"></i> Download (.txt)
-            </button>
+          <!-- Description -->
+          <div class="bg-white p-4 rounded-xl border border-slate-200">
+            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Description</p>
+            <p id="taskDescriptionDisplay" class="text-sm text-slate-800 leading-relaxed"></p>
+          </div>
+
+          <!-- Time Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="bg-white p-3.5 rounded-xl border border-slate-200 flex items-center gap-3">
+              <div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="calendar" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Start Time</p>
+                <p id="taskStartTimeDisplay" class="text-xs font-semibold text-slate-900 mt-0.5">Not specified</p>
+              </div>
+            </div>
+
+            <div class="bg-white p-3.5 rounded-xl border border-slate-200 flex items-center gap-3">
+              <div class="w-9 h-9 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="clock" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500">End Time (Deadline)</p>
+                <p id="taskEndTimeDisplay" class="text-xs font-semibold text-slate-900 mt-0.5">Not specified</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        <textarea id="transcriptionOutput" rows="8" class="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-4 text-sm text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition font-sans leading-relaxed resize-y"></textarea>
+        <!-- Raw Speech & JSON Response Tabs -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">API JSON Response</span>
+            <button onclick="copyJsonResponse()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i> <span id="copyJsonBtnText">Copy JSON</span>
+            </button>
+          </div>
+          <pre id="jsonOutputDisplay" class="bg-slate-900 text-slate-100 p-4 rounded-xl text-xs font-mono overflow-x-auto leading-relaxed max-h-64"></pre>
+        </div>
+
+        <details class="bg-slate-50 rounded-xl border border-slate-200 p-3 text-xs text-slate-600">
+          <summary class="font-semibold cursor-pointer text-slate-700">View Raw Speech-to-Text Transcript</summary>
+          <p id="rawTranscriptionDisplay" class="mt-2 text-slate-800 italic bg-white p-3 rounded-lg border border-slate-200"></p>
+        </details>
+
+      </div>
+
+      <!-- Plain Text Result Container (STT mode) -->
+      <div id="sttResultContainer" class="hidden pt-4 border-t border-slate-200 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            ✓ Transcribed
+          </span>
+          <div class="flex items-center gap-2">
+            <button onclick="copyPlainTranscription()" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition flex items-center gap-1.5">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Text
+            </button>
+          </div>
+        </div>
+        <textarea id="plainTranscriptionOutput" rows="6" class="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-4 text-sm text-slate-900 focus:bg-white focus:outline-none transition"></textarea>
       </div>
 
     </div>
 
-    <!-- Quick Help & Vercel Info -->
-    <div class="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-slate-500">
-      <div class="p-4 rounded-xl bg-white border border-slate-200">
-        <div class="font-bold text-slate-800 flex items-center gap-1.5 mb-1">
-          <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i> Serverless Ready
-        </div>
-        Runs on Vercel Python Serverless functions with automatic scaling and zero idle cost.
+    <!-- API Reference Card for Developers -->
+    <div class="mt-8 bg-white border border-slate-200 rounded-2xl p-6 space-y-4">
+      <div class="flex items-center gap-2 text-sm font-bold text-slate-900">
+        <i data-lucide="terminal" class="w-4 h-4 text-indigo-600"></i>
+        <span>API Reference: POST /api/speech-to-task</span>
       </div>
-      <div class="p-4 rounded-xl bg-white border border-slate-200">
-        <div class="font-bold text-slate-800 flex items-center gap-1.5 mb-1">
-          <i data-lucide="lock" class="w-4 h-4 text-emerald-500"></i> Secure API Keys
-        </div>
-        Configure <code class="bg-slate-100 px-1 py-0.5 rounded font-mono">OPENAI_API_KEY</code> securely in Vercel Environment Variables.
+      <p class="text-xs text-slate-600 leading-relaxed">
+        You can call this API endpoint directly from any client (cURL, Python, JavaScript, mobile app) with an audio file and OpenAI API key:
+      </p>
+      <div class="bg-slate-900 text-slate-200 p-4 rounded-xl text-xs font-mono overflow-x-auto leading-relaxed">
+        <span class="text-emerald-400">curl</span> -X POST "https://&lt;your-domain&gt;.vercel.app/api/speech-to-task" \<br/>
+        &nbsp;&nbsp;-F "file=@meeting.mp3" \<br/>
+        &nbsp;&nbsp;-F "api_key=sk-..."
       </div>
-      <div class="p-4 rounded-xl bg-white border border-slate-200">
-        <div class="font-bold text-slate-800 flex items-center gap-1.5 mb-1">
-          <i data-lucide="file-audio" class="w-4 h-4 text-blue-500"></i> Multiple Formats
-        </div>
-        Transcribes MP3, WAV, M4A, WEBM, FLAC, OGG, and live voice recordings seamlessly.
+      <div class="text-xs text-slate-500">
+        <strong>Response JSON keys:</strong> <code class="text-indigo-600 font-mono">title</code>, <code class="text-indigo-600 font-mono">description</code>, <code class="text-indigo-600 font-mono">start_time</code>, <code class="text-indigo-600 font-mono">strat_time</code>, <code class="text-indigo-600 font-mono">end_time</code>, <code class="text-indigo-600 font-mono">priority</code>.
       </div>
     </div>
 
@@ -231,7 +291,7 @@
   <!-- Footer -->
   <footer class="border-t border-slate-200 bg-white py-4 text-center text-xs text-slate-500">
     <div class="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-      <p>Powered by OpenAI Transcriptions API & Vercel Serverless.</p>
+      <p>Powered by OpenAI Whisper & GPT-5 Mini on Vercel Serverless.</p>
       <p>Original Streamlit version preserved in <code class="text-slate-700 font-mono">speechToText.py</code>.</p>
     </div>
   </footer>
@@ -240,13 +300,14 @@
   <script>
     lucide.createIcons();
 
-    // State
+    let currentMode = 'task'; // 'task' or 'transcribe'
     let selectedFile = null;
     let mediaRecorder = null;
     let audioChunks = [];
     let recordStartTime = null;
     let timerInterval = null;
     let isRecording = false;
+    let lastJsonResult = null;
 
     // Elements
     const dropZone = document.getElementById('dropZone');
@@ -255,19 +316,28 @@
     const audioPlayer = document.getElementById('audioPlayer');
     const audioFileName = document.getElementById('audioFileName');
     const audioFileSize = document.getElementById('audioFileSize');
-    const transcribeBtn = document.getElementById('transcribeBtn');
+    const processBtn = document.getElementById('processBtn');
+    const processBtnText = document.getElementById('processBtnText');
     const modelSelect = document.getElementById('modelSelect');
     const apiKeyInput = document.getElementById('apiKeyInput');
     const loadingIndicator = document.getElementById('loadingIndicator');
-    const resultContainer = document.getElementById('resultContainer');
-    const transcriptionOutput = document.getElementById('transcriptionOutput');
     const errorBanner = document.getElementById('errorBanner');
     const errorMessage = document.getElementById('errorMessage');
-    const statWords = document.getElementById('statWords');
-    const statChars = document.getElementById('statChars');
     const serverKeyBadge = document.getElementById('serverKeyBadge');
 
-    // Load saved API key if user previously typed one
+    // Result containers
+    const taskResultContainer = document.getElementById('taskResultContainer');
+    const taskTitleDisplay = document.getElementById('taskTitleDisplay');
+    const taskDescriptionDisplay = document.getElementById('taskDescriptionDisplay');
+    const taskStartTimeDisplay = document.getElementById('taskStartTimeDisplay');
+    const taskEndTimeDisplay = document.getElementById('taskEndTimeDisplay');
+    const taskPriorityBadge = document.getElementById('taskPriorityBadge');
+    const jsonOutputDisplay = document.getElementById('jsonOutputDisplay');
+    const rawTranscriptionDisplay = document.getElementById('rawTranscriptionDisplay');
+    const sttResultContainer = document.getElementById('sttResultContainer');
+    const plainTranscriptionOutput = document.getElementById('plainTranscriptionOutput');
+
+    // Load saved API key
     const savedKey = localStorage.getItem('openai_api_key');
     if (savedKey) apiKeyInput.value = savedKey;
 
@@ -279,7 +349,6 @@
       }
     });
 
-    // Check backend health and server key status
     async function checkHealth() {
       try {
         const res = await fetch('/api/health');
@@ -290,12 +359,29 @@
           }
         }
       } catch (e) {
-        console.warn('Health check not available yet:', e);
+        console.warn('Health check:', e);
       }
     }
     checkHealth();
 
-    // Tab switching
+    function setMode(mode) {
+      currentMode = mode;
+      const modeTaskBtn = document.getElementById('modeTaskBtn');
+      const modeSttBtn = document.getElementById('modeSttBtn');
+
+      if (mode === 'task') {
+        modeTaskBtn.className = "flex-1 py-2 px-3 rounded-lg bg-white text-indigo-700 shadow-sm transition flex items-center justify-center gap-1.5";
+        modeSttBtn.className = "flex-1 py-2 px-3 rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5";
+        processBtnText.textContent = "🚀 Extract Task (GPT-5 Mini)";
+      } else {
+        modeSttBtn.className = "flex-1 py-2 px-3 rounded-lg bg-white text-blue-700 shadow-sm transition flex items-center justify-center gap-1.5";
+        modeTaskBtn.className = "flex-1 py-2 px-3 rounded-lg text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5";
+        processBtnText.textContent = "🚀 Transcribe Audio";
+      }
+      taskResultContainer.classList.add('hidden');
+      sttResultContainer.classList.add('hidden');
+    }
+
     function switchTab(tab) {
       const tabUpload = document.getElementById('tabUpload');
       const tabRecord = document.getElementById('tabRecord');
@@ -319,7 +405,6 @@
       }
     }
 
-    // Drag and drop handlers
     dropZone.addEventListener('click', () => audioInput.click());
     dropZone.addEventListener('dragover', (e) => {
       e.preventDefault();
@@ -355,11 +440,10 @@
       audioPlayer.src = fileUrl;
       audioPreviewContainer.classList.remove('hidden');
 
-      transcribeBtn.disabled = false;
+      processBtn.disabled = false;
       hideError();
     }
 
-    // Microphone recording
     async function toggleRecording() {
       const recordBtnText = document.getElementById('recordBtnText');
       const recordingTimer = document.getElementById('recordingTimer');
@@ -370,9 +454,7 @@
           audioChunks = [];
           
           let mimeType = 'audio/webm';
-          if (!MediaRecorder.isTypeSupported(mimeType)) {
-            mimeType = 'audio/mp4';
-          }
+          if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'audio/mp4';
 
           mediaRecorder = new MediaRecorder(stream);
           mediaRecorder.ondataavailable = (e) => {
@@ -381,7 +463,7 @@
 
           mediaRecorder.onstop = () => {
             const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
-            const recordedFile = new File([blob], `recorded_audio_${Date.now()}.webm`, { type: blob.type });
+            const recordedFile = new File([blob], `voice_${Date.now()}.webm`, { type: blob.type });
             handleFileSelect(recordedFile);
             stream.getTracks().forEach(track => track.stop());
           };
@@ -394,7 +476,7 @@
           recordStartTime = Date.now();
           timerInterval = setInterval(updateTimer, 1000);
         } catch (err) {
-          showError('Microphone access denied or not supported in this browser: ' + err.message);
+          showError('Microphone access denied: ' + err.message);
         }
       } else {
         mediaRecorder.stop();
@@ -407,9 +489,9 @@
 
     function updateTimer() {
       const elapsed = Math.floor((Date.now() - recordStartTime) / 1000);
-      const minutes = String(Math.floor(elapsed / 60)).padStart(2, '0');
-      const seconds = String(elapsed % 60).padStart(2, '0');
-      document.getElementById('recordTimeDisplay').textContent = `${minutes}:${seconds}`;
+      const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+      const s = String(elapsed % 60).padStart(2, '0');
+      document.getElementById('recordTimeDisplay').textContent = `${m}:${s}`;
     }
 
     function toggleKeyVisibility() {
@@ -435,27 +517,31 @@
       errorMessage.textContent = '';
     }
 
-    // Transcription trigger
-    async function startTranscription() {
+    async function runProcess() {
       if (!selectedFile) {
         showError('Please select or record an audio file first.');
         return;
       }
 
       hideError();
-      transcribeBtn.disabled = true;
+      processBtn.disabled = true;
       loadingIndicator.classList.remove('hidden');
-      resultContainer.classList.add('hidden');
+      taskResultContainer.classList.add('hidden');
+      sttResultContainer.classList.add('hidden');
 
       const formData = new FormData();
       formData.append('file', selectedFile);
-      formData.append('model', modelSelect.value);
       if (apiKeyInput.value.trim()) {
         formData.append('api_key', apiKeyInput.value.trim());
       }
 
+      const endpoint = currentMode === 'task' ? '/api/speech-to-task' : '/api/transcribe';
+      if (currentMode === 'task') {
+        formData.append('model', modelSelect.value);
+      }
+
       try {
-        const response = await fetch('/api/transcribe', {
+        const response = await fetch(endpoint, {
           method: 'POST',
           body: formData
         });
@@ -463,57 +549,68 @@
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.detail || 'Transcription failed with status ' + response.status);
+          throw new Error(data.detail || 'Request failed with status ' + response.status);
         }
 
-        // Render result
-        const text = data.text || '';
-        transcriptionOutput.value = text;
-        
-        // Calculate stats
-        const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-        const chars = text.length;
-        statWords.textContent = `${words.toLocaleString()} words`;
-        statChars.textContent = `${chars.toLocaleString()} characters`;
+        if (currentMode === 'task') {
+          lastJsonResult = data;
+          taskTitleDisplay.textContent = data.title || 'Untitled Task';
+          taskDescriptionDisplay.textContent = data.description || 'No description provided';
+          taskStartTimeDisplay.textContent = data.start_time || data.strat_time || 'Not specified';
+          taskEndTimeDisplay.textContent = data.end_time || 'Not specified';
 
-        resultContainer.classList.remove('hidden');
-        resultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          // Priority badge styling
+          const p = (data.priority || 'Medium').toLowerCase();
+          if (p.includes('urgent')) {
+            taskPriorityBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200';
+            taskPriorityBadge.textContent = 'Urgent Priority';
+          } else if (p.includes('high')) {
+            taskPriorityBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-800 border border-orange-200';
+            taskPriorityBadge.textContent = 'High Priority';
+          } else if (p.includes('low')) {
+            taskPriorityBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200';
+            taskPriorityBadge.textContent = 'Low Priority';
+          } else {
+            taskPriorityBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200';
+            taskPriorityBadge.textContent = 'Medium Priority';
+          }
+
+          jsonOutputDisplay.textContent = JSON.stringify(data, null, 2);
+          rawTranscriptionDisplay.textContent = data.raw_transcription || 'No transcription available.';
+          taskResultContainer.classList.remove('hidden');
+          taskResultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        } else {
+          plainTranscriptionOutput.value = data.text || '';
+          sttResultContainer.classList.remove('hidden');
+          sttResultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
 
       } catch (err) {
         showError(err.message);
       } finally {
-        transcribeBtn.disabled = false;
+        processBtn.disabled = false;
         loadingIndicator.classList.add('hidden');
       }
     }
 
-    // Copy to clipboard
-    async function copyTranscription() {
-      const text = transcriptionOutput.value;
-      if (!text) return;
+    async function copyJsonResponse() {
+      if (!lastJsonResult) return;
       try {
-        await navigator.clipboard.writeText(text);
-        const copyBtnText = document.getElementById('copyBtnText');
-        copyBtnText.textContent = 'Copied!';
-        setTimeout(() => copyBtnText.textContent = 'Copy', 2000);
-      } catch (err) {
-        alert('Failed to copy text.');
+        await navigator.clipboard.writeText(JSON.stringify(lastJsonResult, null, 2));
+        const btnText = document.getElementById('copyJsonBtnText');
+        btnText.textContent = 'Copied!';
+        setTimeout(() => btnText.textContent = 'Copy JSON', 2000);
+      } catch (e) {
+        alert('Failed to copy JSON.');
       }
     }
 
-    // Download text file
-    function downloadTranscription() {
-      const text = transcriptionOutput.value;
+    async function copyPlainTranscription() {
+      const text = plainTranscriptionOutput.value;
       if (!text) return;
-      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `transcription_${Date.now()}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await navigator.clipboard.writeText(text);
+      alert('Transcribed text copied to clipboard!');
     }
   </script>
 </body>
