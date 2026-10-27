@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenAI Speech-to-Text | Vercel</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .drag-over {
+      border-color: #3b82f6 !important;
+      background-color: #eff6ff !important;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between antialiased">
+
+  <!-- Navigation / Header -->
+  <header class="border-b border-slate-200 bg-white/80 backdrop-blur sticky top-0 z-30">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+          <i data-lucide="mic" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg text-slate-900 leading-tight">Speech-to-Text</h1>
+          <p class="text-xs text-slate-500">Powered by OpenAI & Vercel Serverless</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="serverKeyBadge" class="hidden text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+          ✓ Server API Key Active
+        </span>
+        <a href="https://github.com/digitalself00/speechtotext" target="_blank" class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-100 transition flex items-center gap-1.5">
+          <i data-lucide="github" class="w-3.5 h-3.5"></i> GitHub
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-3xl w-full mx-auto px-4 py-8 flex-grow">
+    
+    <!-- Hero / Title -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold mb-3">
+        <span class="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
+        Fast & Accurate Audio Transcription
+      </div>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+        Convert Audio to Text in Seconds
+      </h2>
+      <p class="text-slate-600 mt-2 text-sm sm:text-base max-w-xl mx-auto">
+        Upload an audio recording or record live from your microphone. Powered by OpenAI's Whisper and speech models.
+      </p>
+    </div>
+
+    <!-- Main Card -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 space-y-6">
+
+      <!-- Input Method Tabs -->
+      <div class="flex border-b border-slate-200 gap-4 text-sm font-semibold">
+        <button id="tabUploadBtn" class="pb-3 border-b-2 border-blue-600 text-blue-600 flex items-center gap-2 transition" onclick="switchTab('upload')">
+          <i data-lucide="upload-cloud" class="w-4 h-4"></i> Upload Audio File
+        </button>
+        <button id="tabRecordBtn" class="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2 transition" onclick="switchTab('record')">
+          <i data-lucide="mic" class="w-4 h-4"></i> Live Microphone
+        </button>
+      </div>
+
+      <!-- Tab 1: Upload Audio File -->
+      <div id="tabUpload" class="space-y-4">
+        <div id="dropZone" class="border-2 border-dashed border-slate-300 hover:border-blue-400 rounded-xl p-8 text-center cursor-pointer transition bg-slate-50/50">
+          <input type="file" id="audioInput" accept="audio/*,.mp3,.mp4,.mpeg,.mpga,.m4a,.wav,.webm,.ogg,.flac" class="hidden" />
+          <div class="w-14 h-14 mx-auto rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-3">
+            <i data-lucide="upload" class="w-7 h-7"></i>
+          </div>
+          <p class="text-sm font-semibold text-slate-800">
+            Click to upload or drag & drop an audio file
+          </p>
+          <p class="text-xs text-slate-500 mt-1">
+            Supports MP3, WAV, M4A, WEBM, OGG, FLAC, MP4 (Max 25 MB)
+          </p>
+        </div>
+      </div>
+
+      <!-- Tab 2: Live Microphone Recording -->
+      <div id="tabRecord" class="hidden space-y-4">
+        <div class="border border-slate-200 rounded-xl p-6 text-center bg-slate-50/50 space-y-4">
+          <div class="flex items-center justify-center gap-4">
+            <button id="recordToggleBtn" onclick="toggleRecording()" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold flex items-center gap-2 shadow-sm transition">
+              <i data-lucide="disc" class="w-4 h-4"></i> <span id="recordBtnText">Start Recording</span>
+            </button>
+          </div>
+          <div id="recordingTimer" class="hidden text-xl font-mono font-bold text-rose-600 flex items-center justify-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping"></span>
+            <span id="recordTimeDisplay">00:00</span>
+          </div>
+          <p class="text-xs text-slate-500">
+            Allow microphone access when prompted by your browser.
+          </p>
+        </div>
+      </div>
+
+      <!-- Selected Audio Preview -->
+      <div id="audioPreviewContainer" class="hidden p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+        <div class="flex items-center justify-between text-xs font-semibold text-slate-700">
+          <span class="flex items-center gap-1.5 truncate max-w-xs sm:max-w-md">
+            <i data-lucide="music" class="w-4 h-4 text-blue-600 flex-shrink-0"></i>
+            <span id="audioFileName" class="truncate font-medium text-slate-800">audio.mp3</span>
+          </span>
+          <span id="audioFileSize" class="text-slate-500 font-mono">0 KB</span>
+        </div>
+        <audio id="audioPlayer" controls class="w-full h-10 outline-none rounded-lg"></audio>
+      </div>
+
+      <!-- Model and Configuration Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+        <!-- Model Selector -->
+        <div>
+          <label for="modelSelect" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+            Transcription Model
+          </label>
+          <select id="modelSelect" class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+            <option value="whisper-1" selected>whisper-1 (Recommended)</option>
+            <option value="gpt-4o-mini-transcribe">gpt-4o-mini-transcribe</option>
+            <option value="gpt-4o-transcribe">gpt-4o-transcribe</option>
+          </select>
+          <p class="text-[11px] text-slate-400 mt-1">whisper-1 is OpenAI's standard speech-to-text model.</p>
+        </div>
+
+        <!-- Optional OpenAI API Key -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label for="apiKeyInput" class="block text-xs font-bold uppercase tracking-wider text-slate-600">
+              OpenAI API Key
+            </label>
+            <span class="text-[11px] text-slate-400 font-normal">Optional if set in Vercel</span>
+          </div>
+          <div class="relative">
+            <input type="password" id="apiKeyInput" placeholder="sk-..." class="w-full rounded-xl border border-slate-200 bg-white pl-3.5 pr-10 py-2.5 text-sm text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono transition" />
+            <button type="button" onclick="toggleKeyVisibility()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+              <i data-lucide="eye" id="eyeIcon" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-1">Stored securely in your browser's session only.</p>
+        </div>
+      </div>
+
+      <!-- Error Message Banner -->
+      <div id="errorBanner" class="hidden p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm flex items-start gap-3">
+        <i data-lucide="alert-circle" class="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5"></i>
+        <div class="flex-grow">
+          <p class="font-semibold text-rose-900">Transcription Failed</p>
+          <p id="errorMessage" class="text-xs text-rose-700 mt-0.5 break-words"></p>
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <button id="transcribeBtn" onclick="startTranscription()" disabled class="w-full py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold text-sm shadow-md shadow-blue-500/20 transition flex items-center justify-center gap-2">
+        <i data-lucide="sparkles" class="w-4 h-4"></i>
+        <span>🚀 Transcribe Audio</span>
+      </button>
+
+      <!-- Loading State -->
+      <div id="loadingIndicator" class="hidden py-6 text-center space-y-3">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
+        <p class="text-sm font-semibold text-slate-700">Transcribing audio with OpenAI...</p>
+        <p class="text-xs text-slate-400">This usually takes between 3 to 15 seconds depending on file length.</p>
+      </div>
+
+      <!-- Output / Result Card -->
+      <div id="resultContainer" class="hidden pt-4 border-t border-slate-200 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              ✓ Completed
+            </span>
+            <span id="statWords" class="text-xs text-slate-500 font-medium">0 words</span>
+            <span class="text-slate-300">•</span>
+            <span id="statChars" class="text-xs text-slate-500 font-medium">0 characters</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="copyTranscription()" class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition flex items-center gap-1.5">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i> <span id="copyBtnText">Copy</span>
+            </button>
+            <button onclick="downloadTranscription()" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition flex items-center gap-1.5">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i> Download (.txt)
+            </button>
+          </div>
+        </div>
+
+        <textarea id="transcriptionOutput" rows="8" class="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-4 text-sm text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition font-sans leading-relaxed resize-y"></textarea>
+      </div>
+
+    </div>
+
+    <!-- Quick Help & Vercel Info -->
+    <div class="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-slate-500">
+      <div class="p-4 rounded-xl bg-white border border-slate-200">
+        <div class="font-bold text-slate-800 flex items-center gap-1.5 mb-1">
+          <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i> Serverless Ready
+        </div>
+        Runs on Vercel Python Serverless functions with automatic scaling and zero idle cost.
+      </div>
+      <div class="p-4 rounded-xl bg-white border border-slate-200">
+        <div class="font-bold text-slate-800 flex items-center gap-1.5 mb-1">
+          <i data-lucide="lock" class="w-4 h-4 text-emerald-500"></i> Secure API Keys
+        </div>
+        Configure <code class="bg-slate-100 px-1 py-0.5 rounded font-mono">OPENAI_API_KEY</code> securely in Vercel Environment Variables.
+      </div>
+      <div class="p-4 rounded-xl bg-white border border-slate-200">
+        <div class="font-bold text-slate-800 flex items-center gap-1.5 mb-1">
+          <i data-lucide="file-audio" class="w-4 h-4 text-blue-500"></i> Multiple Formats
+        </div>
+        Transcribes MP3, WAV, M4A, WEBM, FLAC, OGG, and live voice recordings seamlessly.
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-200 bg-white py-4 text-center text-xs text-slate-500">
+    <div class="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <p>Powered by OpenAI Transcriptions API & Vercel Serverless.</p>
+      <p>Original Streamlit version preserved in <code class="text-slate-700 font-mono">speechToText.py</code>.</p>
+    </div>
+  </footer>
+
+  <!-- Client-side Logic -->
+  <script>
+    lucide.createIcons();
+
+    // State
+    let selectedFile = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let recordStartTime = null;
+    let timerInterval = null;
+    let isRecording = false;
+
+    // Elements
+    const dropZone = document.getElementById('dropZone');
+    const audioInput = document.getElementById('audioInput');
+    const audioPreviewContainer = document.getElementById('audioPreviewContainer');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const audioFileName = document.getElementById('audioFileName');
+    const audioFileSize = document.getElementById('audioFileSize');
+    const transcribeBtn = document.getElementById('transcribeBtn');
+    const modelSelect = document.getElementById('modelSelect');
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const resultContainer = document.getElementById('resultContainer');
+    const transcriptionOutput = document.getElementById('transcriptionOutput');
+    const errorBanner = document.getElementById('errorBanner');
+    const errorMessage = document.getElementById('errorMessage');
+    const statWords = document.getElementById('statWords');
+    const statChars = document.getElementById('statChars');
+    const serverKeyBadge = document.getElementById('serverKeyBadge');
+
+    // Load saved API key if user previously typed one
+    const savedKey = localStorage.getItem('openai_api_key');
+    if (savedKey) apiKeyInput.value = savedKey;
+
+    apiKeyInput.addEventListener('change', () => {
+      if (apiKeyInput.value.trim()) {
+        localStorage.setItem('openai_api_key', apiKeyInput.value.trim());
+      } else {
+        localStorage.removeItem('openai_api_key');
+      }
+    });
+
+    // Check backend health and server key status
+    async function checkHealth() {
+      try {
+        const res = await fetch('/api/health');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.has_server_api_key) {
+            serverKeyBadge.classList.remove('hidden');
+          }
+        }
+      } catch (e) {
+        console.warn('Health check not available yet:', e);
+      }
+    }
+    checkHealth();
+
+    // Tab switching
+    function switchTab(tab) {
+      const tabUpload = document.getElementById('tabUpload');
+      const tabRecord = document.getElementById('tabRecord');
+      const tabUploadBtn = document.getElementById('tabUploadBtn');
+      const tabRecordBtn = document.getElementById('tabRecordBtn');
+
+      if (tab === 'upload') {
+        tabUpload.classList.remove('hidden');
+        tabRecord.classList.add('hidden');
+        tabUploadBtn.classList.add('border-blue-600', 'text-blue-600');
+        tabUploadBtn.classList.remove('border-transparent', 'text-slate-500');
+        tabRecordBtn.classList.remove('border-blue-600', 'text-blue-600');
+        tabRecordBtn.classList.add('border-transparent', 'text-slate-500');
+      } else {
+        tabUpload.classList.add('hidden');
+        tabRecord.classList.remove('hidden');
+        tabRecordBtn.classList.add('border-blue-600', 'text-blue-600');
+        tabRecordBtn.classList.remove('border-transparent', 'text-slate-500');
+        tabUploadBtn.classList.remove('border-blue-600', 'text-blue-600');
+        tabUploadBtn.classList.add('border-transparent', 'text-slate-500');
+      }
+    }
+
+    // Drag and drop handlers
+    dropZone.addEventListener('click', () => audioInput.click());
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+
+    audioInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleFileSelect(e.target.files[0]);
+      }
+    });
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / 1048576).toFixed(2) + ' MB';
+    }
+
+    function handleFileSelect(file) {
+      selectedFile = file;
+      audioFileName.textContent = file.name;
+      audioFileSize.textContent = formatBytes(file.size);
+      
+      const fileUrl = URL.createObjectURL(file);
+      audioPlayer.src = fileUrl;
+      audioPreviewContainer.classList.remove('hidden');
+
+      transcribeBtn.disabled = false;
+      hideError();
+    }
+
+    // Microphone recording
+    async function toggleRecording() {
+      const recordBtnText = document.getElementById('recordBtnText');
+      const recordingTimer = document.getElementById('recordingTimer');
+
+      if (!isRecording) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          audioChunks = [];
+          
+          let mimeType = 'audio/webm';
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = 'audio/mp4';
+          }
+
+          mediaRecorder = new MediaRecorder(stream);
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) audioChunks.push(e.data);
+          };
+
+          mediaRecorder.onstop = () => {
+            const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+            const recordedFile = new File([blob], `recorded_audio_${Date.now()}.webm`, { type: blob.type });
+            handleFileSelect(recordedFile);
+            stream.getTracks().forEach(track => track.stop());
+          };
+
+          mediaRecorder.start();
+          isRecording = true;
+          recordBtnText.textContent = 'Stop Recording';
+          recordingTimer.classList.remove('hidden');
+          
+          recordStartTime = Date.now();
+          timerInterval = setInterval(updateTimer, 1000);
+        } catch (err) {
+          showError('Microphone access denied or not supported in this browser: ' + err.message);
+        }
+      } else {
+        mediaRecorder.stop();
+        isRecording = false;
+        recordBtnText.textContent = 'Record Again';
+        recordingTimer.classList.add('hidden');
+        clearInterval(timerInterval);
+      }
+    }
+
+    function updateTimer() {
+      const elapsed = Math.floor((Date.now() - recordStartTime) / 1000);
+      const minutes = String(Math.floor(elapsed / 60)).padStart(2, '0');
+      const seconds = String(elapsed % 60).padStart(2, '0');
+      document.getElementById('recordTimeDisplay').textContent = `${minutes}:${seconds}`;
+    }
+
+    function toggleKeyVisibility() {
+      const input = document.getElementById('apiKeyInput');
+      const eye = document.getElementById('eyeIcon');
+      if (input.type === 'password') {
+        input.type = 'text';
+        eye.setAttribute('data-lucide', 'eye-off');
+      } else {
+        input.type = 'password';
+        eye.setAttribute('data-lucide', 'eye');
+      }
+      lucide.createIcons();
+    }
+
+    function showError(msg) {
+      errorMessage.textContent = msg;
+      errorBanner.classList.remove('hidden');
+    }
+
+    function hideError() {
+      errorBanner.classList.add('hidden');
+      errorMessage.textContent = '';
+    }
+
+    // Transcription trigger
+    async function startTranscription() {
+      if (!selectedFile) {
+        showError('Please select or record an audio file first.');
+        return;
+      }
+
+      hideError();
+      transcribeBtn.disabled = true;
+      loadingIndicator.classList.remove('hidden');
+      resultContainer.classList.add('hidden');
+
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('model', modelSelect.value);
+      if (apiKeyInput.value.trim()) {
+        formData.append('api_key', apiKeyInput.value.trim());
+      }
+
+      try {
+        const response = await fetch('/api/transcribe', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail || 'Transcription failed with status ' + response.status);
+        }
+
+        // Render result
+        const text = data.text || '';
+        transcriptionOutput.value = text;
+        
+        // Calculate stats
+        const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+        const chars = text.length;
+        statWords.textContent = `${words.toLocaleString()} words`;
+        statChars.textContent = `${chars.toLocaleString()} characters`;
+
+        resultContainer.classList.remove('hidden');
+        resultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      } catch (err) {
+        showError(err.message);
+      } finally {
+        transcribeBtn.disabled = false;
+        loadingIndicator.classList.add('hidden');
+      }
+    }
+
+    // Copy to clipboard
+    async function copyTranscription() {
+      const text = transcriptionOutput.value;
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        const copyBtnText = document.getElementById('copyBtnText');
+        copyBtnText.textContent = 'Copied!';
+        setTimeout(() => copyBtnText.textContent = 'Copy', 2000);
+      } catch (err) {
+        alert('Failed to copy text.');
+      }
+    }
+
+    // Download text file
+    function downloadTranscription() {
+      const text = transcriptionOutput.value;
+      if (!text) return;
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `transcription_${Date.now()}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>
