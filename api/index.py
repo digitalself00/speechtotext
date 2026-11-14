@@ -4,12 +4,19 @@ from typing import Optional
 from fastapi import FastAPI, UploadFile, File, Form, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from openai import OpenAI, AuthenticationError, RateLimitError, BadRequestError, APIError
+from openai import (
+    OpenAI,
+    AuthenticationError,
+    RateLimitError,
+    BadRequestError,
+    NotFoundError,
+    APIError
+)
 
 app = FastAPI(
     title="OpenAI Speech-to-Text & Task Extraction API",
-    description="Vercel Serverless API for audio transcription and structured task extraction using OpenAI GPT-5 Mini",
-    version="1.1.0"
+    description="Vercel Serverless API for audio transcription and structured task extraction using OpenAI",
+    version="1.2.0"
 )
 
 # Enable CORS for external callers or local dev
@@ -29,16 +36,15 @@ SYSTEM_TASK_PROMPT = """You are an expert AI task extractor.
 Analyze the transcribed speech and extract a structured task item.
 Respond ONLY with a valid JSON object matching the following structure:
 {
-  "title": "<Concise, clear task title>",
-  "description": "<Detailed description of what needs to be done, including context and key details>",
-  "start_time": "<Scheduled start time or date if mentioned (e.g. 'Tomorrow at 10:00 AM', '2026-10-28 09:00'), otherwise 'Not specified'>",
-  "end_time": "<Deadline or completion time if mentioned (e.g. 'Friday 5:00 PM', '2026-10-31'), otherwise 'Not specified'>",
+  "title": "<Concise, clear task title in Gujarati>",
+  "description": "<Detailed description of what needs to be done, including context and key details in Gujarati>",
+  "start_time": "<Scheduled start time or date if mentioned (e.g. 'આવતીકાલે સવારે 10:00 વાગ્યે'), otherwise 'Not specified'>",
+  "end_time": "<Deadline or completion time if mentioned, otherwise 'Not specified'>",
   "priority": "<Priority level based on urgency cues: 'Low', 'Medium', 'High', or 'Urgent'>"
 }
 
 Do not include any explanation or markdown backticks outside the JSON. Return strictly a raw JSON object.
-Always return all the fields except priority in Gujarati. First detect the users language
-"""
+Always return all the fields except priority in Gujarati. First detect the users language."""
 
 def resolve_api_key(
     form_key: Optional[str] = None,
@@ -111,21 +117,23 @@ async def health_check():
         "has_server_api_key": has_key,
         "endpoints": [
             "/api/speech-to-task",
+            "/api/speech-to-text",
             "/api/extract-task",
             "/api/transcribe"
         ],
-        "default_llm_model": "gpt-5-mini",
-        "transcription_model": "whisper-1"
+        "default_llm_model": "gpt-5.6-luna",
+        "transcription_model": "gpt-transcribe"
     }
 
 
 @app.post("/api/speech-to-task")
+@app.post("/api/speech-to-text")
 @app.post("/api/extract-task")
 async def speech_to_task(
     file: UploadFile = File(...),
     api_key: Optional[str] = Form(None),
-    model: str = Form("gpt-5-mini"),
-    transcription_model: str = Form("gpt-realtime-translate"),
+    model: str = Form("gpt-5.6-luna"),
+    transcription_model: str = Form("gpt-transcribe"),
     authorization: Optional[str] = Header(None),
     x_api_key: Optional[str] = Header(None),
     x_openai_key: Optional[str] = Header(None)
@@ -133,7 +141,7 @@ async def speech_to_task(
     """
     Exposed API:
     Input: OpenAI Key and Speech file (plus optional model selection)
-    Process: Speech-to-Text transcription -> OpenAI GPT-5 Mini task extraction
+    Process: Speech-to-Text transcription (gpt-transcribe) -> OpenAI GPT-5.6 Luna task extraction
     Output: JSON with title, description, strat_time (start_time), end_time, priority
     """
     resolved_key = resolve_api_key(api_key, authorization, x_api_key, x_openai_key)
@@ -151,8 +159,8 @@ async def speech_to_task(
 
         if not transcribed_text or not transcribed_text.strip():
             return {
-                "title": "No speech detected",
-                "description": "Audio file contained no recognizable speech.",
+                "title": "કોઈ અવાજ મળ્યો નથી",
+                "description": "ઓડિયો ફાઇલમાં કોઈ ઓળખી શકાય તેવી સ્પીચ નથી.",
                 "start_time": "Not specified",
                 "strat_time": "Not specified",
                 "end_time": "Not specified",
@@ -160,35 +168,20 @@ async def speech_to_task(
                 "raw_transcription": ""
             }
 
-        # Step 2: Extract Task with OpenAI GPT model (default: gpt-5-mini)
-        llm_model = model.strip() if model and model.strip() else "gpt-5-mini"
+        # Step 2: Extract Task with OpenAI model directly (no fallbacks)
         messages = [
             {"role": "system", "content": SYSTEM_TASK_PROMPT},
             {"role": "user", "content": f"Transcribed speech text:\n\"\"\"{transcribed_text}\"\"\""}
         ]
 
-        try:
-            completion = client.chat.completions.create(
-                model=llm_model,
-                messages=messages,
-                response_format={"type": "json_object"},
-                temperature=0.2
-            )
-        except Exception as e:
-            err_str = str(e).lower()
-            # If gpt-5-mini is not yet accessible on user account, gracefully fall back to gpt-4o-mini
-            if "not found" in err_str or "does not exist" in err_str or "model" in err_str:
-                llm_model = "gpt-5.6-luna"
-                completion = client.chat.completions.create(
-                    model=llm_model,
-                    messages=messages,
-                    response_format={"type": "json_object"},
-                    temperature=0.2
-                )
-            else:
-                raise
+        completion = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            response_format={"type": "json_object"},
+            temperature=0.2
+        )
 
-        # Step 3: Parse and validate JSON output
+        # Step 3: Parse JSON output
         raw_json_str = completion.choices[0].message.content or "{}"
         try:
             task_data = json.loads(raw_json_str)
@@ -207,11 +200,11 @@ async def speech_to_task(
             "title": title,
             "description": description,
             "start_time": start_time,
-            "strat_time": start_time,  # included for exact matching with user's prompt key
+            "strat_time": start_time,
             "end_time": end_time,
             "priority": priority,
             "raw_transcription": transcribed_text,
-            "model_used": llm_model
+            "model_used": model
         }
 
     except AuthenticationError:
@@ -223,6 +216,11 @@ async def speech_to_task(
         raise HTTPException(
             status_code=429,
             detail="OpenAI Rate limit reached or quota exceeded. Please check your OpenAI billing/quota."
+        )
+    except NotFoundError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=f"OpenAI Model Not Found (404): {getattr(e, 'message', str(e))}"
         )
     except BadRequestError as e:
         raise HTTPException(
@@ -244,9 +242,10 @@ async def speech_to_task(
 
 
 @app.post("/api/transcribe")
+@app.post("/api/stt")
 async def transcribe(
     file: UploadFile = File(...),
-    model: str = Form("whisper-1"),
+    model: str = Form("gpt-transcribe"),
     api_key: Optional[str] = Form(None),
     authorization: Optional[str] = Header(None),
     x_api_key: Optional[str] = Header(None)
@@ -271,6 +270,8 @@ async def transcribe(
         raise HTTPException(status_code=401, detail="Authentication failed: Invalid OpenAI API key.")
     except RateLimitError:
         raise HTTPException(status_code=429, detail="OpenAI rate limit or quota exceeded.")
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=f"OpenAI model not found: {getattr(e, 'message', str(e))}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
 
