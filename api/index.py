@@ -177,8 +177,7 @@ async def speech_to_task(
         completion = client.chat.completions.create(
             model=model,
             messages=messages,
-            response_format={"type": "json_object"},
-            temperature=0.2
+            response_format={"type": "json_object"}
         )
 
         # Step 3: Parse JSON output
