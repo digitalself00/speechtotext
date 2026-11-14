@@ -125,7 +125,7 @@ async def speech_to_task(
     file: UploadFile = File(...),
     api_key: Optional[str] = Form(None),
     model: str = Form("gpt-5-mini"),
-    transcription_model: str = Form("whisper-1"),
+    transcription_model: str = Form("gpt-realtime-translate"),
     authorization: Optional[str] = Header(None),
     x_api_key: Optional[str] = Header(None),
     x_openai_key: Optional[str] = Header(None)
@@ -178,7 +178,7 @@ async def speech_to_task(
             err_str = str(e).lower()
             # If gpt-5-mini is not yet accessible on user account, gracefully fall back to gpt-4o-mini
             if "not found" in err_str or "does not exist" in err_str or "model" in err_str:
-                llm_model = "gpt-4o-mini"
+                llm_model = "gpt-5.6-luna"
                 completion = client.chat.completions.create(
                     model=llm_model,
                     messages=messages,
