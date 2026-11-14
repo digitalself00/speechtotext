@@ -36,7 +36,9 @@ Respond ONLY with a valid JSON object matching the following structure:
   "priority": "<Priority level based on urgency cues: 'Low', 'Medium', 'High', or 'Urgent'>"
 }
 
-Do not include any explanation or markdown backticks outside the JSON. Return strictly a raw JSON object."""
+Do not include any explanation or markdown backticks outside the JSON. Return strictly a raw JSON object.
+Always return all the fields except priority in Gujarati. First detect the users language
+"""
 
 def resolve_api_key(
     form_key: Optional[str] = None,
