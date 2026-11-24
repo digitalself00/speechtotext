@@ -36,10 +36,10 @@ SYSTEM_TASK_PROMPT = """You are an expert AI task extractor.
 Analyze the transcribed speech and extract a structured task item.
 Respond ONLY with a valid JSON object matching the following structure:
 {
-  "title": "<Concise, clear task title in Gujarati>",
-  "description": "<Detailed description of what needs to be done, including context and key details in Gujarati>",
-  "start_time": "<Scheduled start time or date if mentioned (e.g. 'આવતીકાલે સવારે 10:00 વાગ્યે'), otherwise 'Not specified'>",
-  "end_time": "<Deadline or completion time if mentioned, otherwise 'Not specified'>",
+  "title": "<Concise, clear task title>",
+  "description": "<Detailed description of what needs to be done, including context and key details>",
+  "start_time": "<Scheduled start time or date if mentioned (e.g. 'Tomorrow at 10:00 AM', '2026-10-28 09:00'), otherwise 'Not specified'>",
+  "end_time": "<Deadline or completion time if mentioned (e.g. 'Friday 5:00 PM', '2026-10-31'), otherwise 'Not specified'>",
   "priority": "<Priority level based on urgency cues: 'Low', 'Medium', 'High', or 'Urgent'>"
 }
 
