@@ -44,7 +44,7 @@ Respond ONLY with a valid JSON object matching the following structure:
 }
 
 Do not include any explanation or markdown backticks outside the JSON. Return strictly a raw JSON object.
-Always return all the fields except priority in Gujarati. First detect the users language."""
+Always return all the fields in English."""
 
 def resolve_api_key(
     form_key: Optional[str] = None,
@@ -159,8 +159,8 @@ async def speech_to_task(
 
         if not transcribed_text or not transcribed_text.strip():
             return {
-                "title": "કોઈ અવાજ મળ્યો નથી",
-                "description": "ઓડિયો ફાઇલમાં કોઈ ઓળખી શકાય તેવી સ્પીચ નથી.",
+                "title": "No speech detected",
+                "description": "Audio file contained no recognizable speech.",
                 "start_time": "Not specified",
                 "strat_time": "Not specified",
                 "end_time": "Not specified",
